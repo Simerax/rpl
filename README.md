@@ -15,3 +15,5 @@ I wanted a simple perl repl with minimal dependencies in one script
 * Strict (can be toggled by §strict and §no-strict - Variables are not strict since every command is in its own eval but things like barewords are caught)
 * Code is evaluated in its own package 'REPL' so names don't clash with the main script functions (of course you can still override main functions if you try ;) )
 
+
+![](https://i.imgur.com/RiZkMZk.gif)
