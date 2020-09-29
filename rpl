@@ -1,0 +1,111 @@
+#!perl
+
+use warnings;
+use strict;
+use Data::Dump qw(dump);
+use Term::ReadLine;
+
+use feature 'say';
+
+
+my $term = Term::ReadLine->new('Perl REPL');
+$term->ornaments(0);
+
+my $use_strict = 1;
+
+while( my $input = $term->readline('> ')) {
+    {
+        chomp($input);
+        $input =~ s/\n$//;
+
+        if($input =~ /^§/) {
+            interpret_command($input)
+        } else {
+            eval_code($input);
+        }
+    }
+}
+
+sub interpret_command {
+    my ($command) = @_;
+    if($command =~ /^§r\s+(.*)$/) {
+        my $path = $1;
+        $path =~ s/^\s+//;
+        $path =~ s/\s+$//;
+        my $code = "require '$path'";
+        push @INC, '.';
+        delete $INC{$path}; # make sure we reload files which have been loaded previously
+        eval_code($code);
+        pop @INC;
+    } elsif($command =~ /^§strict/) {
+        $use_strict = 1;
+        _write("strict turned on.");
+    } elsif($command =~ /^§no(-)?strict/) {
+        $use_strict = 0;
+        _write("strict turned off.");
+    } else {
+        _write("Unknown command '$command'");
+    }
+}
+
+sub eval_code {
+    my ($code) = @_;
+    my $local_warning = "";
+    local $SIG{__WARN__} = sub {
+        $local_warning = join(' ', @_);
+    };
+
+    my @result = EVAL::run($code, $use_strict);
+    if($@) {
+        $@ =~ s/\n$//;
+        $@ =~ s/\n"$/"/;
+        $local_warning =~ s/\n$//;
+        _write("Error: ", $@, $local_warning);
+    } else {
+        _dump_var(@result);
+        _write("Warning: ", $local_warning) if ($local_warning);
+    }
+}
+
+
+sub _read {
+    local $| = 1;
+    print "> ";
+    my $input = <STDIN>;
+    chomp($input);
+    return $input;
+}
+
+sub _write {
+    my $output = "";
+    foreach(@_) {
+        if (ref($_)) {
+            $output .= dump($_);
+        } else {
+            $output .= $_ if (defined $_);
+        }
+    }
+    say '>> '.$output; 
+}
+
+sub _dump_var {
+    my @output;
+    foreach(@_) {
+        if(ref($_)) {
+            push @output, dump($_);
+        } else {
+            push @output, defined($_) ? $_ : undef;
+        }
+    }
+    say '>> '. dump(@output);
+}
+
+package EVAL;
+
+sub run {
+    my $code = shift;
+    my $strict = shift // 0;
+    $code = "package REPL { ".$code." }";
+    $code = "use strict; no strict 'vars'; $code" if($strict);
+    eval $code;
+}
