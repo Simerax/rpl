@@ -68,14 +68,6 @@ sub eval_code {
 }
 
 
-sub _read {
-    local $| = 1;
-    print "> ";
-    my $input = <STDIN>;
-    chomp($input);
-    return $input;
-}
-
 sub _write {
     my $output = "";
     foreach(@_) {
@@ -89,15 +81,7 @@ sub _write {
 }
 
 sub _dump_var {
-    my @output;
-    foreach(@_) {
-        if(ref($_)) {
-            push @output, dump($_);
-        } else {
-            push @output, defined($_) ? $_ : undef;
-        }
-    }
-    say '>> '. dump(@output);
+    say '>> '.dump(@_);
 }
 
 package EVAL;
