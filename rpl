@@ -90,6 +90,10 @@ sub run {
     my $code = shift;
     my $strict = shift // 0;
     $code = "package REPL { ".$code." }";
-    $code = "use strict; no strict 'vars'; $code" if($strict);
+    if ($strict) {
+        $code = "use strict; no strict 'vars'; $code";
+    } else {
+        $code = "no strict; $code";
+    }
     eval $code;
 }
